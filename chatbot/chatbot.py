@@ -1,8 +1,12 @@
-from openai import OpenAI
-from dotenv import load_dotenv
+
 import os 
 import json
-from tools import Tools, FUNCTION_NAME_TO_FUNCTION
+
+from openai import OpenAI
+from dotenv import load_dotenv
+
+from tools import Tools, FUNCTION_NAME_TO_FUNCTION, call_tool
+from utility.utility import log 
 
 load_dotenv()
 
@@ -10,6 +14,8 @@ client=OpenAI(
     base_url=os.getenv("BASE_URL"),
     api_key=os.getenv("API_KEY")
 )
+
+max_steps=int(os.getenv("MAX_STEPS"));
 
 message=[
 {
@@ -20,7 +26,7 @@ message=[
 
 while True:
 
-    user_input=input("\nUSER:: ").strip().lower()
+    user_input=input("\n👦USER:: ").strip().lower()
     # print("\nUSER:: ", user_input)
 
     if( user_input in ["exit","quit",'bye']):
@@ -31,49 +37,50 @@ while True:
         "content":user_input
     })
 
-    completion = client.chat.completions.create(
-        model=os.getenv("MODEL_NAME"),
-        messages=message,
-        tools=Tools
-    )
+    for  step in  range( max_steps):
 
-    # print("\n", completion.choices[0].message)
+        completion = client.chat.completions.create(
+            model=os.getenv("MODEL_NAME"),
+            messages=message,
+            tools=Tools
+        )
+
+        # print("\n", completion.choices[0].message)
+        msg=completion.choices[0].message
+
+        log(f" Steps {step+1} of {max_steps}");
 
 
+        if not msg.tool_calls:
+            break
 
-    if( completion.choices[0].message.tool_calls):
-
-        for tool in completion.choices[0].message.tool_calls:   # first to get the name of the function it want to call
-
-            function_name=tool.function.name   # it will be a string  
-            name_tool=FUNCTION_NAME_TO_FUNCTION[( function_name ) ]  # find the res call function
-
-            function_arg= json.loads(tool.function.arguments or {})  # tool.argument wll be a string convert it into the dict
-
-            result= name_tool( **function_arg )  #  dictin unpacking  operator 
-
+        message.append( msg)
+        
+        for tool in msg.tool_calls:   # first to get the name of the function it want to call
+            result= call_tool(tool)
             message.append({
                 "role":"tool",
                 "tool_call_id":tool.id,
                 "content":str(result)
 
             })
+    else:
+        fallback = "Sorry, I could not finish this task."
 
-
-        response = client.chat.completions.create(
-                model=os.getenv("MODEL_NAME"),
-                messages=message,
-                tools=Tools
-        )
-        completion=response
-
+        message.append({
+            "role": "assistant",
+            "content": fallback
+        })
+        print("🤖 Assistant: " + fallback)
+        # chat_file_path = save_chat(chat_file_path, messages[1:])
+        continue
 
 
     message.append({
         "role":"assistant",
-        "content":completion.choices[0].message.content
+        "content":msg.content
     })
-    print( "\nASSISANT:: ", completion.choices[0].message.content)
+    print( "🤖 Assistant: ", msg.content)
 
 print(message)
 
