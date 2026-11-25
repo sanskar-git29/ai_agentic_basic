@@ -4,6 +4,10 @@ from datetime import datetime
 from utility.utility import log
 
 
+
+
+
+
 def get_date():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -16,7 +20,33 @@ def get_weather(city:str,temperature_unit:str="celsius",include_wind:bool=False)
 
 def get_city_name()->str:
     return "delhi"
- 
+
+def build_tool_calls_payload(tool_calls):
+    """
+    Converts our collected tool calls into the dict format
+    that the API expects inside an assistant message.
+    """
+
+    payload = []
+    for tool_call in tool_calls:
+        tool_call_dict = {
+            "id": tool_call.id,
+            "type": "function",
+            "function": {
+                "name": tool_call.function.name,
+                "arguments": tool_call.function.arguments,
+            },
+        }
+        payload.append(tool_call_dict)
+
+    return payload
+
+FUNCTION_NAME_TO_FUNCTION={
+    "get_date":get_date,
+    "get_weather":get_weather,
+    "get_city_name":get_city_name
+}
+
 Tools=[
     {
 
@@ -73,12 +103,6 @@ Tools=[
 
 ]
 
-FUNCTION_NAME_TO_FUNCTION={
-    "get_date":get_date,
-    "get_weather":get_weather,
-    "get_city_name":get_city_name
-}
-
 def call_tool( tool):
     function_arg={};
     function_name=tool.function.name   # it will be a string  
@@ -86,17 +110,13 @@ def call_tool( tool):
     try:
         name_tool=FUNCTION_NAME_TO_FUNCTION[( function_name ) ]  # find the res call function
 
-        log(f" 🔧 Calling tool: {function_name} with arguments: {tool.function.arguments}")         
         function_arg= json.loads(tool.function.arguments or {})  # tool.argument wll be a string convert it into the dict
+        log(f" 🔧 Calling tool: {function_name} with arguments: {function_arg}")         
 
         result= name_tool( **function_arg )  #  dictin unpacking  operator 
-
-       
+        log(f" 🔧 Tool {function_name} returned: {result}")
     except Exception as e:
         return f"Error calling tool {tool.function.name}: {str(e)}"
     
-    
     return  result
-    
-
 
