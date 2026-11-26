@@ -59,6 +59,9 @@ cover/
 *.mo
 *.pot
 
+# knowledge file of docs 
+knowledge_base 
+
 # Django stuff:
 *.log
 local_settings.py

@@ -1,4 +1,3 @@
-
 import os 
 import json
 from types import SimpleNamespace
@@ -10,6 +9,8 @@ from tools import Tools, FUNCTION_NAME_TO_FUNCTION, call_tool,build_tool_calls_p
 from utility.utility import log 
 
 load_dotenv()
+
+max_steps=int(os.getenv("MAX_STEPS"));
 
 client=OpenAI(
     base_url=os.getenv("BASE_URL"),
@@ -63,14 +64,10 @@ def get_stream_response(history):
     return content ,calls_list,
 
 
-max_steps=int(os.getenv("MAX_STEPS"));
-
 message = [
     {
         "role": "system",
-        "content": """
-        You are a helpful AI assistant.
-        """
+        "content": "You are a helpful AI assistant."
     }
 ]
 
@@ -126,7 +123,7 @@ while True:
     })
     # print( "🤖 Assistant: ",full_response)
 
-print(message)
+print((message))
 
 
 #completion = ChatCompletion(#
