@@ -66,8 +66,20 @@ def get_stream_response(history):
 
 message = [
     {
-        "role": "system",
-        "content": "You are a helpful AI assistant."
+    "role": "system",
+    "content": """
+    You are a helpful AI assistant.
+
+    Instructions:
+    
+    1. If the user asks questions about company policies,
+       use the retrieve_policy tool.
+    2. Answer using the retrieved document context.
+    3. Do not invent information that is not present in the documents.
+    4. If the retrieved context does not contain the answer,
+       clearly tell the user that the information is unavailable.
+    5. Do not expose similarity scores unless explicitly requested.
+    """
     }
 ]
 

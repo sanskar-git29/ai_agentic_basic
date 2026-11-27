@@ -5,6 +5,8 @@ import numpy
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from utility.utility import log
+
 load_dotenv() #by default looks for .env file
 
 client = OpenAI(
@@ -20,13 +22,11 @@ def get_embedding(text):
     )
     return response.data[0].embedding
 
-
 def cosine_similarity(A, B):
     dot_prod = numpy.dot(A, B)
     norm_a = numpy.linalg.norm(A)
     norm_b = numpy.linalg.norm(B)
     return dot_prod / (norm_a * norm_b)
-
 
 def chunks_document(document):
     chunks=[]
@@ -43,7 +43,6 @@ def chunks_document(document):
 
     return chunks
 
-
 def create_chunks(folder_name):
     documents = load_documents(folder_name)
     chunks = []
@@ -52,7 +51,6 @@ def create_chunks(folder_name):
         chunks.extend(chunks_document(document))
 
     return chunks
-
 
 def load_documents(folder_name):
   
@@ -87,16 +85,15 @@ def load_vector_store():
     with open(VECTOR_STORE_FILE, "r", encoding="utf-8") as f:
         return json.load(f) #returns the chunks
 
-
 def load_chunks(FOLDER_NAME):
     if os.path.exists(VECTOR_STORE_FILE):
         chunks = load_vector_store()
-        print(f"Loaded {len(chunks)} chunks from the {VECTOR_STORE_FILE}")
+        log(f"Loaded {len(chunks)} chunks from the {VECTOR_STORE_FILE}")
     else:
         chunks = create_chunks(FOLDER_NAME)
         chunks = add_embedding(chunks)
         save_vector_store(chunks)
-        print(f"Created and embedded {len(chunks)} chunks and saved to {VECTOR_STORE_FILE}")
+        log(f"Created and embedded {len(chunks)} chunks and saved to {VECTOR_STORE_FILE}")
 
     return chunks
 
@@ -115,13 +112,10 @@ def search_query( query,document,top_k=3):
         })
     res.sort( key=lambda rec:rec["score"] ,reverse=True)
 
-    print( res[:top_k])
+    return ( res[:top_k])
 
 
 
-chunks = load_chunks(os.getenv("KNOWLEDGE_FOLDER"))
-query="find the information about the leave for all doc "
-search_query(query,chunks)
 
 
 

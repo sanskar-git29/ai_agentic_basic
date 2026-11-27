@@ -1,11 +1,18 @@
 import json 
+import os 
 
 from datetime import datetime
+from dotenv import load_dotenv
+
 from utility.utility import log
+from semantic_search import load_chunks, search_query
+
+# print(os.getenv("KNOWLEDGE_FOLDER"))
+
+load_dotenv()
 
 
-
-
+chunks = load_chunks(os.getenv("KNOWLEDGE_FOLDER"))
 
 
 def get_date():
@@ -20,6 +27,30 @@ def get_weather(city:str,temperature_unit:str="celsius",include_wind:bool=False)
 
 def get_city_name()->str:
     return "delhi"
+
+def retrieve_policy(query: str,top_k=3):
+    """
+    Retrieve relevant chunks from the policy documents.
+    """
+
+   
+   
+    # Replace this with your existing RAG retrieval function
+    results = search_query(query,chunks,top_k=top_k)
+
+    formatted_results = []
+
+    for item in results:
+        formatted_results.append({
+            "source": item["source"],
+            "chunk_id": int(item["chunk_id"]),
+            "text": item["text"],
+            "score": float(item["score"])
+        })
+
+    return json.dumps({
+        "results": formatted_results
+    }, indent=2)
 
 def build_tool_calls_payload(tool_calls):
     """
@@ -44,8 +75,11 @@ def build_tool_calls_payload(tool_calls):
 FUNCTION_NAME_TO_FUNCTION={
     "get_date":get_date,
     "get_weather":get_weather,
-    "get_city_name":get_city_name
+    "get_city_name":get_city_name,
+    "retrieve_policy": retrieve_policy
 }
+
+
 
 Tools=[
     {
@@ -87,6 +121,7 @@ Tools=[
             }
         }
     },
+    
     {
          "type":"function",
                 "function":{
@@ -97,10 +132,29 @@ Tools=[
                         "properties":{}
                     }
                 }
+    },
+    
+    {
+    "type": "function",
+    "function": {
+        "name": "retrieve_policy",
+        "description": "Search company policy documents and retrieve relevant information about employee leave, medical leave, sick leave, and other company policies.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The user's question about company policies."
+                },
+                "top_k": {
+                    "type": "integer",
+                    "description": "Number of relevant chunks to retrieve. Default is 3."
+                }
+            },
+            "required": ["query"]
+        }
     }
-
-
-
+    }
 ]
 
 def call_tool( tool):
